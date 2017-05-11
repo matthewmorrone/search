@@ -1,0 +1,135 @@
+<html>
+<head>
+<title>Word Search</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="shortcut icon" type="image/x-icon" href="http://www.matthewmorrone.com/psi.ico" />
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-color/2.1.2/jquery.color.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/js-url/2.5.0/url.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha/css/bootstrap.min.css" />
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css" />
+<script>
+var log = console.log.bind(console)
+</script>
+<style>
+* {
+	margin: 0px;
+	padding: 0px;
+}
+body {
+	width: 100%;
+	height: 100%;
+
+}
+.section {
+	width: 100%;
+	overflow-wrap: break-word;
+}
+table, th, td {
+	border: 1px solid black;
+	border-collapse: collapse;
+}
+.syn_of_syns, .relevancy-list li {
+	padding: 5px;
+}
+
+#thesaurus ul li {
+	display: inline-block;
+}
+.r {
+	font-size: 1rem !important;
+}
+</style>
+</head>
+<body>
+<script>
+function load(handle, callback) {
+	$.post('api.php', {
+		handle: handle
+	}, callback,
+	'text')
+}
+$(function() {
+	load('https://www.google.com/search?q='+url('query'), function(d) {
+		$('#google').html($(d).find('#res'))
+
+		$('.g').each(function() {
+			$(this).find('.r a').attr('href', $(this).find('.kv cite').text()).attr('target', '_blank')
+			$(this).find('.kv').remove()
+		})
+	})
+	load('http://en.wikipedia.org/wiki/'+url('query'), function(d) {
+		$('#wikipedia').html($(d).find('.toc').prevAll('p').get().reverse())
+	})
+	load('http://en.wiktionary.org/wiki/'+url('query'), function(d) {
+		$('#wiktionary').html($(d).find('#mw-content-text hr').prevAll().get().reverse())
+		$('#wiktionary').find('.mw-editsection, .toc, .was-wotd, ol, h2, p:first-child, p:nth-child(2)').remove()
+		$('.audiotable').parents('li').remove()
+	})
+	load('http://www.thesaurus.com/browse/'+url('query'), function(d) {
+		$('#thesaurus').html($(d).find('.filters, .box.syn_of_syns, #paginator'))
+		$('#thesaurus').find('h2').remove()
+
+
+		$('a.syn_of_syns').each(function() {
+			$(this).text($(this).text().replace(' ', '\xa0'))
+		})
+
+		$('#thesaurus').find(':empty').remove()
+		$('.star').remove()
+
+		$('.syn_of_syns').css('padding', '5px')
+
+		$('.relevancy-list').each(function() {
+			var $ul = $('<ul></ul>')
+			$(this).find('li').appendTo($ul)
+			$(this).append($ul)
+		})
+
+		var pages = $('#paginator div').length + 1
+		$('#paginator').remove()
+		for(var i = 2; i <= pages; i++) {
+			load('http://www.thesaurus.com/browse/'+url('query')+'/'+i, function(e) {
+				e = $(e).find('.box.syn_of_syns')
+				$('#thesaurus').append(e)
+				$('.box').each(function() {
+					var $ul = $('<ul></ul>')
+					$(this).find('li').appendTo($ul)
+					$(this).find('.def').after($ul)
+				})
+
+				$('#thesaurus').find('h2').remove()
+
+
+				$('a.syn_of_syns').each(function() {
+					$(this).text($(this).text().replace(' ', '\xa0'))
+				})
+
+				$('#thesaurus').find(':empty').remove()
+			})
+		}
+
+	})
+
+	load('http://www.rhymezone.com/r/rhyme.cgi?typeofrhyme=perfect&org1=syl&org2=l&org3=y&Word='+url('query'), function(d) {
+		$('#rhymes').html($(d).find('td[align="left"]:eq(0)'))
+		$('#rhymes').find('div, center').remove()
+	})
+
+	// load('http://www.dictionary.com/browse/', function(d) {
+	// 	$('#dictionary').html(d)
+	// })
+})
+
+</script>
+<div class='section' id='google'></div>
+<div class='section' id='wikipedia'></div>
+<div class='section' id='wiktionary'></div>
+<div class='section' id='thesaurus'></div>
+<!-- <div class='section' id='dictionary'></div> -->
+<div class='section' id='rhymes'></div>
+</body>
+</html>
